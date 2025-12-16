@@ -1,0 +1,6 @@
+out/
+tools/
+*.elf
+*.bin
+*.cue
+*.log
