@@ -6,9 +6,8 @@ set LOG=%OUT%\logs
 set TOOLSDIR=%ROOT%\tools
 if not exist "%LOG%" mkdir "%LOG%"
 
-if exist "%DISC%" rmdir /S /Q "%DISC%"
-mkdir "%DISC%"
-mkdir "%DISC%\DATA"
+if not exist "%DISC%" mkdir "%DISC%"
+if not exist "%DISC%\DATA" mkdir "%DISC%\DATA"
 
 echo Copying disc template...
 xcopy /E /I /Y "%ROOT%\disc_template" "%DISC%" >NUL
@@ -23,14 +22,16 @@ if not exist "%DISC%\SUB.BIN" (
 )
 
 REM Generate IP.BIN
-if exist "%TOOLSDIR%\ipbin\ipbin.exe" (
-  "%TOOLSDIR%\ipbin\ipbin.exe" -o "%DISC%\IP.BIN" -p "MEGACD" -d "MINNKA STARTER" -v "1.00" >"%LOG%\ipbin.log" 2>&1
+set IPGEN=
+for /r "%TOOLSDIR%\ipbin" %%f in (ipbin.exe) do if not defined IPGEN set IPGEN=%%f
+if defined IPGEN (
+  "%IPGEN%" -o "%DISC%\IP.BIN" -p "MEGACD" -d "MINNKA STARTER" -v "1.00" >"%LOG%\ipbin.log" 2>&1
 ) else (
   powershell -NoProfile -ExecutionPolicy Bypass -Command "$bytes = New-Object byte[] 2048; $bytes[0]=0x41; $bytes[1]=0x42; [IO.File]::WriteAllBytes('%DISC%\\IP.BIN',$bytes)" >>"%LOG%\ipbin.log" 2>&1
 )
 
-set MKISO=%TOOLSDIR%\mkisofs\cdrtools-3.02a09-win32-bin\mkisofs.exe
-if not exist "%MKISO%" set MKISO=%TOOLSDIR%\mkisofs\mkisofs.exe
+set MKISO=
+for /r "%TOOLSDIR%\mkisofs" %%f in (mkisofs.exe) do if not defined MKISO set MKISO=%%f
 
 if not exist "%MKISO%" (
   echo mkisofs not found.

@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include <string.h>
+#include "../src_common/minlib.h"
 #include "../src_common/comm.h"
 
 #define WORD_RAM ((uint8_t*)0x200000)

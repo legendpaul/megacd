@@ -3,7 +3,9 @@ set ROOT=%~dp0..
 set OUT=%ROOT%\out
 set TOOLSDIR=%ROOT%\tools
 set LOG=%OUT%\logs
+if exist "%OUT%\disc" rmdir /S /Q "%OUT%\disc" >NUL 2>&1
 if not exist "%LOG%" mkdir "%LOG%"
+if not exist "%OUT%" mkdir "%OUT%"
 
 echo Checking tools...
 if not exist "%TOOLSDIR%\m68k-elf\_ok" (

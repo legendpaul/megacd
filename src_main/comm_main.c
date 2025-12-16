@@ -1,5 +1,5 @@
 #include "comm_main.h"
-#include <string.h>
+#include "../src_common/minlib.h"
 
 static const char *last_status = "IDLE";
 

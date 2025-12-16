@@ -1,6 +1,5 @@
 #include <stdint.h>
-#include <string.h>
-#include <stdio.h>
+#include "../src_common/minlib.h"
 #include "vdp.h"
 #include "input.h"
 #include "scene.h"

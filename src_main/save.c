@@ -1,5 +1,5 @@
 #include "save.h"
-#include <string.h>
+#include "../src_common/minlib.h"
 #include <stddef.h>
 
 static save_data_t g_save;
