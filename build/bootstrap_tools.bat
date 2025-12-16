@@ -29,11 +29,18 @@ set IPGEN_ARCHIVE=%TOOLSDIR%\ipgen.zip
 set IPGEN_DIR=%TOOLSDIR%\ipbin
 
 call :download_and_unpack "m68k-elf GCC" %GCC_URL% %GCC_ARCHIVE% %GCC_SHA% %GCC_DIR%
+if errorlevel 1 goto :fail
 call :download_and_unpack "mkisofs" %MKISO_URL% %MKISO_ARCHIVE% %MKISO_SHA% %MKISO_DIR%
+if errorlevel 1 goto :fail
 call :download_and_unpack "IP.BIN generator" %IPGEN_URL% %IPGEN_ARCHIVE% %IPGEN_SHA% %IPGEN_DIR%
+if errorlevel 1 goto :fail
 
 echo Bootstrap complete.
 exit /b 0
+
+:fail
+echo Bootstrap failed. See %BOOTLOG% for details.
+exit /b 1
 
 :download_and_unpack
 set NAME=%~1
@@ -49,7 +56,7 @@ if exist "%DEST%\_ok" (
 
 echo Downloading %NAME% from %URL%>>"%BOOTLOG%"
 if not exist "%ARCHIVE%" (
-  %DOWNLOAD_PS% "Invoke-WebRequest -Uri '%URL%' -OutFile '%ARCHIVE%'" >>"%BOOTLOG%" 2>&1
+  %DOWNLOAD_PS% "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -UseBasicParsing -Uri '%URL%' -OutFile '%ARCHIVE%'" >>"%BOOTLOG%" 2>&1
   if errorlevel 1 (
     echo Failed to download %NAME%.
     exit /b 1
