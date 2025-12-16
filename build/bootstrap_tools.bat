@@ -55,16 +55,17 @@ if exist "%DEST%\_ok" (
 )
 
 echo Downloading %NAME% from %URL%>>"%BOOTLOG%"
-if not exist "%ARCHIVE%" (
+call :download_if_needed "%NAME%" "%URL%" "%ARCHIVE%"
+if errorlevel 1 exit /b 1
+
+call :verify_hash "%ARCHIVE%" "%SHA_EXPECT%" "%NAME%"
+if errorlevel 1 (
+  echo Retrying download for %NAME% after hash mismatch.>>"%BOOTLOG%"
+  del "%ARCHIVE%" >NUL 2>&1
   call :download_file "%NAME%" "%URL%" "%ARCHIVE%"
   if errorlevel 1 exit /b 1
-)
-
-%DOWNLOAD_PS% "$hash = (Get-FileHash '%ARCHIVE%' -Algorithm SHA256).Hash; if ($hash.ToLower() -ne '%SHA_EXPECT%') { Write-Error 'SHA mismatch expected %SHA_EXPECT% got ' + $hash }" >>"%BOOTLOG%" 2>&1
-if errorlevel 1 (
-  echo SHA256 mismatch for %NAME%.
-  del "%ARCHIVE%" >NUL 2>&1
-  exit /b 1
+  call :verify_hash "%ARCHIVE%" "%SHA_EXPECT%" "%NAME%"
+  if errorlevel 1 exit /b 1
 )
 
 call :ensure_dir "%DEST%"
@@ -82,6 +83,37 @@ goto :eof
 :ensure_dir
 if not exist %1 mkdir %1
 exit /b 0
+
+:verify_hash
+set VF=%~1
+set VEXPECT=%~2
+set VNAME=%~3
+set VHASH=
+for /f "usebackq tokens=*" %%H in (`%DOWNLOAD_PS% "(Get-FileHash '%VF%' -Algorithm SHA256).Hash.ToLower()"`) do set VHASH=%%H
+if "%VHASH%"=="" (
+  echo Failed to compute hash for %VNAME%>>"%BOOTLOG%"
+  exit /b 1
+)
+echo Hash for %VNAME%: %VHASH% (expected %VEXPECT%)>>"%BOOTLOG%"
+if /I not "%VHASH%"=="%VEXPECT%" (
+  echo SHA256 mismatch for %VNAME%.>>"%BOOTLOG%"
+  echo SHA256 mismatch for %VNAME%. Actual %VHASH%, expected %VEXPECT%.
+  exit /b 1
+)
+exit /b 0
+
+:download_if_needed
+set DIN_NAME=%~1
+set DIN_URL=%~2
+set DIN_OUT=%~3
+
+if exist "%DIN_OUT%" (
+  echo %DIN_NAME% already downloaded, skipping fetch>>"%BOOTLOG%"
+  exit /b 0
+)
+
+call :download_file "%DIN_NAME%" "%DIN_URL%" "%DIN_OUT%"
+exit /b %errorlevel%
 
 :download_file
 set DNAME=%~1
