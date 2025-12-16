@@ -56,11 +56,8 @@ if exist "%DEST%\_ok" (
 
 echo Downloading %NAME% from %URL%>>"%BOOTLOG%"
 if not exist "%ARCHIVE%" (
-  %DOWNLOAD_PS% "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -UseBasicParsing -Uri '%URL%' -OutFile '%ARCHIVE%'" >>"%BOOTLOG%" 2>&1
-  if errorlevel 1 (
-    echo Failed to download %NAME%.
-    exit /b 1
-  )
+  call :download_file "%NAME%" "%URL%" "%ARCHIVE%"
+  if errorlevel 1 exit /b 1
 )
 
 %DOWNLOAD_PS% "$hash = (Get-FileHash '%ARCHIVE%' -Algorithm SHA256).Hash; if ($hash.ToLower() -ne '%SHA_EXPECT%') { Write-Error 'SHA mismatch expected %SHA_EXPECT% got ' + $hash }" >>"%BOOTLOG%" 2>&1
@@ -84,4 +81,27 @@ goto :eof
 
 :ensure_dir
 if not exist %1 mkdir %1
+exit /b 0
+
+:download_file
+set DNAME=%~1
+set DURL=%~2
+set DOUT=%~3
+
+%DOWNLOAD_PS% "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::SystemDefault -bor [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls; try { Invoke-WebRequest -UseBasicParsing -Uri '%DURL%' -OutFile '%DOUT%' -ErrorAction Stop } catch { exit 1 }" >>"%BOOTLOG%" 2>&1
+if errorlevel 1 (
+  echo PowerShell download failed for %DNAME%, trying curl.exe>>"%BOOTLOG%"
+  where curl.exe >>"%BOOTLOG%" 2>&1
+  if errorlevel 1 (
+    echo curl.exe not found; cannot download %DNAME%.>>"%BOOTLOG%"
+    echo Failed to download %DNAME%.
+    exit /b 1
+  )
+  curl.exe -L --retry 3 --retry-delay 2 -o "%DOUT%" "%DURL%" >>"%BOOTLOG%" 2>&1
+  if errorlevel 1 (
+    echo Failed to download %DNAME%.
+    del "%DOUT%" >NUL 2>&1
+    exit /b 1
+  )
+)
 exit /b 0
