@@ -120,7 +120,11 @@ set DNAME=%~1
 set DURL=%~2
 set DOUT=%~3
 
-%DOWNLOAD_PS% "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::SystemDefault -bor [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls; try { Invoke-WebRequest -UseBasicParsing -Uri '%DURL%' -OutFile '%DOUT%' -ErrorAction Stop } catch { exit 1 }" >>"%BOOTLOG%" 2>&1
+%DOWNLOAD_PS% ^
+  "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::SystemDefault -bor [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls;" ^
+  "$ProgressPreference='SilentlyContinue';" ^
+  "$u='%DURL%'; $o='%DOUT%';" ^
+  "Invoke-WebRequest -Uri $u -OutFile $o -MaximumRedirection 10 -Headers @{ 'User-Agent'='Mozilla/5.0' } -UseBasicParsing -ErrorAction Stop;" >>"%BOOTLOG%" 2>&1
 if errorlevel 1 (
   echo PowerShell download failed for %DNAME%, trying curl.exe>>"%BOOTLOG%"
   where curl.exe >>"%BOOTLOG%" 2>&1
@@ -129,11 +133,21 @@ if errorlevel 1 (
     echo Failed to download %DNAME%.
     exit /b 1
   )
-  curl.exe -L --retry 3 --retry-delay 2 -o "%DOUT%" "%DURL%" >>"%BOOTLOG%" 2>&1
+  curl.exe -L --retry 3 --retry-delay 2 -H "User-Agent: Mozilla/5.0" -o "%DOUT%" "%DURL%" >>"%BOOTLOG%" 2>&1
   if errorlevel 1 (
     echo Failed to download %DNAME%.
     del "%DOUT%" >NUL 2>&1
     exit /b 1
   )
+)
+
+set SIZE=
+for %%A in ("%DOUT%") do set SIZE=%%~zA
+if "%SIZE%"=="" set SIZE=0
+if %SIZE% LSS 1000000 (
+  echo Download too small (%SIZE% bytes). Likely HTML/redirect failure.>>"%BOOTLOG%"
+  echo Download too small for %DNAME% (%SIZE% bytes). Likely HTML/redirect failure.
+  del "%DOUT%" >NUL 2>&1
+  exit /b 1
 )
 exit /b 0
