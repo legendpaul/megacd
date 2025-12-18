@@ -9,45 +9,56 @@ if not exist "%LOG%" mkdir "%LOG%"
 if not exist "%DISC%" mkdir "%DISC%"
 if not exist "%DISC%\DATA" mkdir "%DISC%\DATA"
 
-echo Copying disc template...
+echo Copying disc template..
 xcopy /E /I /Y "%ROOT%\disc_template" "%DISC%" >NUL
 
 if not exist "%DISC%\MAIN.BIN" (
-  echo MAIN.BIN missing. Did main build run?
+  echo MAIN.BIN missing - Did main build run?
   exit /b 1
 )
 if not exist "%DISC%\SUB.BIN" (
-  echo SUB.BIN missing. Did sub build run?
+  echo SUB.BIN missing - Did sub build run?
   exit /b 1
 )
 
-REM Generate IP.BIN
-set IPGEN=
-for /r "%TOOLSDIR%\ipbin" %%f in (ipbin.exe) do if not defined IPGEN set IPGEN=%%f
-if defined IPGEN (
-  "%IPGEN%" -o "%DISC%\IP.BIN" -p "MEGACD" -d "MINNKA STARTER" -v "1.00" >"%LOG%\ipbin.log" 2>&1
-) else (
-  powershell -NoProfile -ExecutionPolicy Bypass -Command "$bytes = New-Object byte[] 2048; $bytes[0]=0x41; $bytes[1]=0x42; [IO.File]::WriteAllBytes('%DISC%\\IP.BIN',$bytes)" >>"%LOG%\ipbin.log" 2>&1
+REM Generate IP.BIN using PowerShell
+echo Creating IP.BIN boot sector...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%TOOLSDIR%\create_ipbin.ps1" -OutputPath "%DISC%\IP.BIN" -ProgramName "MINNKA STARTER" >"%LOG%\ipbin.log" 2>&1
+
+if not exist "%DISC%\IP.BIN" (
+  echo IP.BIN creation failed
+  type "%LOG%\ipbin.log"
+  exit /b 1
 )
 
-set MKISO=
-for /r "%TOOLSDIR%\mkisofs" %%f in (mkisofs.exe) do if not defined MKISO set MKISO=%%f
+REM Use the REAL mkisofs.exe
+set MKISO=%TOOLSDIR%\mkisofs\mkisofs.exe
 
 if not exist "%MKISO%" (
-  echo mkisofs not found.
+  echo mkisofs.exe not found
   exit /b 1
 )
 
-"%MKISO%" -quiet -iso-level 1 -o "%OUT%\game.bin" -G "%DISC%\IP.BIN" -pad "%DISC%" >"%LOG%\mkisofs.log" 2>&1
+REM Create ISO - Sega CD needs the IP.BIN prepended via -G flag
+echo Creating bootable Sega CD ISO...
+"%MKISO%" -o "%OUT%\temp.iso" -V "SEGACD" -sysid "SEGA" -G "%DISC%\IP.BIN" -iso-level 1 -pad "%DISC%" >"%LOG%\mkisofs.log" 2>&1
+
 if errorlevel 1 (
   type "%LOG%\mkisofs.log"
-  echo mkisofs failed.
+  echo mkisofs failed
   exit /b 1
 )
 
-echo FILE "game.bin" BINARY>"%OUT%\game.cue"
-echo   TRACK 01 MODE1/2048>>"%OUT%\game.cue"
-echo     INDEX 01 00:00:00>>"%OUT%\game.cue"
+REM Rename temp.iso to game.bin
+if exist "%OUT%\game.bin" del "%OUT%\game.bin"
+move "%OUT%\temp.iso" "%OUT%\game.bin" >NUL
+
+REM Create CUE file
+(
+  echo FILE "game.bin" BINARY
+  echo   TRACK 01 MODE1/2048
+  echo     INDEX 01 00:00:00
+) > "%OUT%\game.cue"
 
 echo Disc image ready at %OUT%\game.bin
 exit /b 0

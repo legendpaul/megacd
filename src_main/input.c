@@ -10,10 +10,10 @@ void input_init(void) {
 void input_read(pad_state_t *out) {
     uint16_t value = 0;
     IO_DATA = 0x40; // TH high
-    asm volatile ("nop\nnop\nnop");
+    __asm__ volatile ("nop\nnop\nnop");
     uint8_t v1 = IO_DATA;
     IO_DATA = 0x00; // TH low
-    asm volatile ("nop\nnop\nnop");
+    __asm__ volatile ("nop\nnop\nnop");
     uint8_t v2 = IO_DATA;
     value = (v1 << 8) | v2;
     out->raw = value;

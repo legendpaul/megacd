@@ -39,7 +39,7 @@ echo Bootstrap complete.
 exit /b 0
 
 :fail
-echo Bootstrap failed. See %BOOTLOG% for details.
+echo Bootstrap failed See %BOOTLOG% for details
 exit /b 1
 
 :download_and_unpack
@@ -50,7 +50,7 @@ set SHA_EXPECT=%~4
 set DEST=%~5
 
 if exist "%DEST%\_ok" (
-  echo %NAME% already present.>>"%BOOTLOG%"
+  echo %NAME% already present>>"%BOOTLOG%"
   goto :eof
 )
 
@@ -60,7 +60,7 @@ if errorlevel 1 exit /b 1
 
 call :verify_hash "%ARCHIVE%" "%SHA_EXPECT%" "%NAME%"
 if errorlevel 1 (
-  echo Retrying download for %NAME% after hash mismatch.>>"%BOOTLOG%"
+  echo Retrying download for %NAME% after hash mismatch>>"%BOOTLOG%"
   del "%ARCHIVE%" >NUL 2>&1
   call :download_file "%NAME%" "%URL%" "%ARCHIVE%"
   if errorlevel 1 exit /b 1
@@ -71,7 +71,7 @@ if errorlevel 1 (
 call :ensure_dir "%DEST%"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::ExtractToDirectory('%ARCHIVE%', '%DEST%');" >>"%BOOTLOG%" 2>&1
 if errorlevel 1 (
-  echo Failed to extract %NAME%.
+  echo Failed to extract %NAME%
   exit /b 1
 )
 
@@ -96,8 +96,8 @@ if "%VHASH%"=="" (
 )
 echo Hash for %VNAME%: %VHASH% (expected %VEXPECT%)>>"%BOOTLOG%"
 if /I not "%VHASH%"=="%VEXPECT%" (
-  echo SHA256 mismatch for %VNAME%.>>"%BOOTLOG%"
-  echo SHA256 mismatch for %VNAME%. Actual %VHASH%, expected %VEXPECT%.
+  echo SHA256 mismatch for %VNAME%>>"%BOOTLOG%"
+  echo SHA256 mismatch for %VNAME% Actual %VHASH%, expected %VEXPECT%
   exit /b 1
 )
 exit /b 0
@@ -129,13 +129,13 @@ if errorlevel 1 (
   echo PowerShell download failed for %DNAME%, trying curl.exe>>"%BOOTLOG%"
   where curl.exe >>"%BOOTLOG%" 2>&1
   if errorlevel 1 (
-    echo curl.exe not found; cannot download %DNAME%.>>"%BOOTLOG%"
-    echo Failed to download %DNAME%.
+    echo curl.exe not found; cannot download %DNAME%>>"%BOOTLOG%"
+    echo Failed to download %DNAME%
     exit /b 1
   )
   curl.exe -L --retry 3 --retry-delay 2 -H "User-Agent: Mozilla/5.0" -o "%DOUT%" "%DURL%" >>"%BOOTLOG%" 2>&1
   if errorlevel 1 (
-    echo Failed to download %DNAME%.
+    echo Failed to download %DNAME%
     del "%DOUT%" >NUL 2>&1
     exit /b 1
   )
@@ -145,8 +145,8 @@ set SIZE=
 for %%A in ("%DOUT%") do set SIZE=%%~zA
 if "%SIZE%"=="" set SIZE=0
 if %SIZE% LSS 1000000 (
-  echo Download too small (%SIZE% bytes). Likely HTML/redirect failure.>>"%BOOTLOG%"
-  echo Download too small for %DNAME% (%SIZE% bytes). Likely HTML/redirect failure.
+  echo Download too small: %SIZE% bytes>>"%BOOTLOG%"
+  echo Download too small for %DNAME%: %SIZE% bytes
   del "%DOUT%" >NUL 2>&1
   exit /b 1
 )
