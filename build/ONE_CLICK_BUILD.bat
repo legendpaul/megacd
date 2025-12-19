@@ -15,6 +15,8 @@ if not exist "%TOOLSDIR%\m68k-elf\_ok" (
 
 if not exist "%OUT%\disc" mkdir "%OUT%\disc"
 
+call "%ROOT%\build\build_ip.bat"
+if errorlevel 1 goto :fail
 call "%ROOT%\build\build_sub.bat"
 if errorlevel 1 goto :fail
 call "%ROOT%\build\build_main.bat"
