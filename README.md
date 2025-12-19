@@ -34,6 +34,7 @@ Outputs are placed in `out/`:
 - IP.BIN generator (fallback PowerShell generator is included for offline use)
 
 ## Project layout
+- `src_ip/` – IP.BIN boot sector loader (fits in the 2 KB Sega CD IP block)
 - `src_main/` – main CPU C sources and VDP helpers
 - `src_sub/` – sub CPU command loop and ISO stub
 - `src_common/` – shared mailbox definitions
@@ -52,3 +53,4 @@ To verify the one-click flow:
 ## Notes
 - No BIOS files are included or downloaded.
 - All downloaded tools are open-source or freely redistributable and validated with SHA256 inside the bootstrap script.
+- The IP sector must stay within 2048 bytes; the `src_ip/ip.s` loader mirrors the compact boot stub used by commercial discs (e.g., Road Avenger) and jumps into `MAIN.BIN` placed in Word RAM by the BIOS.

@@ -20,14 +20,8 @@ if not exist "%DISC%\SUB.BIN" (
   echo SUB.BIN missing - Did sub build run?
   exit /b 1
 )
-
-REM Generate IP.BIN using PowerShell
-echo Creating IP.BIN boot sector...
-powershell -NoProfile -ExecutionPolicy Bypass -File "%TOOLSDIR%\create_ipbin.ps1" -OutputPath "%DISC%\IP.BIN" -ProgramName "MINNKA STARTER" >"%LOG%\ipbin.log" 2>&1
-
 if not exist "%DISC%\IP.BIN" (
-  echo IP.BIN creation failed
-  type "%LOG%\ipbin.log"
+  echo IP.BIN missing - Did IP build run?
   exit /b 1
 )
 
