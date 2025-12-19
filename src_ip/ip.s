@@ -16,17 +16,21 @@ header:
     .ascii "MEGA-CD  MINNKA"     /* 0x20: product name (padded) */
     .ascii "JUE"                 /* 0x30: region flags */
 
-/* Pad out to 0x50 where the BIOS expects the program type descriptor. */
-    .org 0x50
+/*
+ * The BIOS expects fixed offsets inside the 2 KB IP sector. Use .space instead
+ * of .org so the assembler fills the gaps explicitly without introducing any
+ * linker-relative padding that can push the section past 0x800 bytes.
+ */
+    .space 0x50 - (. - header)
     .ascii "BOOT"                /* Program type: bootable IP */
     .ascii "MAIN"                /* Module name */
 
 /* Jump code lives a little further into the sector. */
-    .org 0x100
+    .space 0x100 - (. - header)
 _start:
     move    #0x2700, %sr         /* Supervisor mode, disable ints */
     lea     0x00020000, %a0      /* Word RAM where MAIN.BIN is loaded */
     jmp     (%a0)                /* Hand off to the main program */
 
 /* Fill the remainder of the sector so objcopy emits exactly 2048 bytes. */
-    .org 0x800
+    .space 0x800 - (. - header)
